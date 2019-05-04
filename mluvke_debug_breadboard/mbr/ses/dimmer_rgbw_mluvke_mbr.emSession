@@ -1,0 +1,7 @@
+<!DOCTYPE CrossStudio_Session_File>
+<session>
+ <Files>
+  <SessionOpenFile windowGroup="DockEditLeft" x="9" y="599" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../main.c" selected="1" top="584" codecName="Default"/>
+ </Files>
+ <ARMCrossStudioWindow activeProject="dimmer_rgbw_mluvke_mbr" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" sessionSettings="" debugSearchFileMap="" fileDialogInitialDirectory="" debugSearchPath="" autoConnectCapabilities="3199"/>
+</session>
