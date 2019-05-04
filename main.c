@@ -1,4 +1,4 @@
-#include "sdk_config.h"
+п»ї#include "sdk_config.h"
 #include "zb_error_handler.h"
 #include "zb_ha_dimmable_light.h"
 #include "zb_mem_config_med.h"
@@ -17,16 +17,16 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
-#define MAX_CHILDREN                 10                      // максимальное количество подключенных дочерних девайсов (для роутера)
-#define IEEE_CHANNEL_MASK            (1l << ZIGBEE_CHANNEL)  // используемые каналы
-#define HA_DIMMABLE_LIGHT_ENDPOINT_R 10                      // 4 эндпоинта для раздельного управления каждым из 4 цветов
+#define MAX_CHILDREN                 10                      // РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕРґРєР»СЋС‡РµРЅРЅС‹С… РґРѕС‡РµСЂРЅРёС… РґРµРІР°Р№СЃРѕРІ (РґР»СЏ СЂРѕСѓС‚РµСЂР°)
+#define IEEE_CHANNEL_MASK            (1l << ZIGBEE_CHANNEL)  // РёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РєР°РЅР°Р»С‹
+#define HA_DIMMABLE_LIGHT_ENDPOINT_R 10                      // 4 СЌРЅРґРїРѕРёРЅС‚Р° РґР»СЏ СЂР°Р·РґРµР»СЊРЅРѕРіРѕ СѓРїСЂР°РІР»РµРЅРёСЏ РєР°Р¶РґС‹Рј РёР· 4 С†РІРµС‚РѕРІ
 #define HA_DIMMABLE_LIGHT_ENDPOINT_G 11                      //
 #define HA_DIMMABLE_LIGHT_ENDPOINT_B 12                      //
 #define HA_DIMMABLE_LIGHT_ENDPOINT_W 13                      //
-#define ERASE_PERSISTENT_CONFIG      ZB_FALSE                // если установить в TRUE, то девайс будет с каждым включением всё забывать и спариваться заново.
-#define DIMMER_PWM_INSTANCE          NRF_DRV_PWM_INSTANCE(0) // инстанс ШИМ, используемый девайсом
-#define DIMMER_PWM_VALUE_MAX         256                     // настройки ШИМ, не вникал в них
-#define DIMMER_PWM_VALUE_MIN         35                      // это вообще не используется, бездумно передрал с предыдущей
+#define ERASE_PERSISTENT_CONFIG      ZB_FALSE                // РµСЃР»Рё СѓСЃС‚Р°РЅРѕРІРёС‚СЊ РІ TRUE, С‚Рѕ РґРµРІР°Р№СЃ Р±СѓРґРµС‚ СЃ РєР°Р¶РґС‹Рј РІРєР»СЋС‡РµРЅРёРµРј РІСЃС‘ Р·Р°Р±С‹РІР°С‚СЊ Рё СЃРїР°СЂРёРІР°С‚СЊСЃСЏ Р·Р°РЅРѕРІРѕ.
+#define DIMMER_PWM_INSTANCE          NRF_DRV_PWM_INSTANCE(0) // РёРЅСЃС‚Р°РЅСЃ РЁРРњ, РёСЃРїРѕР»СЊР·СѓРµРјС‹Р№ РґРµРІР°Р№СЃРѕРј
+#define DIMMER_PWM_VALUE_MAX         256                     // РЅР°СЃС‚СЂРѕР№РєРё РЁРРњ, РЅРµ РІРЅРёРєР°Р» РІ РЅРёС…
+#define DIMMER_PWM_VALUE_MIN         35                      // СЌС‚Рѕ РІРѕРѕР±С‰Рµ РЅРµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ, Р±РµР·РґСѓРјРЅРѕ РїРµСЂРµРґСЂР°Р» СЃ РїСЂРµРґС‹РґСѓС‰РµР№
 
 #define BULB_INIT_BASIC_APP_VERSION   01                                  /**< Version of the application software (1 byte). */
 #define BULB_INIT_BASIC_STACK_VERSION 10                                  /**< Version of the implementation of the ZigBee stack (1 byte). */
@@ -38,20 +38,20 @@
 #define BULB_INIT_BASIC_LOCATION_DESC "Office desk"                       /**< Describes the physical location of the device (16 bytes). May be modified during commisioning process. */
 #define BULB_INIT_BASIC_PH_ENV        ZB_ZCL_BASIC_ENV_UNSPECIFIED        /**< Describes the type of physical environment. For possible values see section 3.2.2.2.10 of ZCL specification. */
 
-#define IDENTIFY_MODE_ENTER_BUTTON BSP_BOARD_BUTTON_0 // номер кнопки спаривания устройств в списке BUTTONS_LIST в файле описания платы
-#define ZIGBEE_NETWORK_STATE_LED   BSP_BOARD_LED_0    // номер светодиода состояния подключения в списке LEDS_LIST в файле описания платы
+#define IDENTIFY_MODE_ENTER_BUTTON BSP_BOARD_BUTTON_0 // РЅРѕРјРµСЂ РєРЅРѕРїРєРё СЃРїР°СЂРёРІР°РЅРёСЏ СѓСЃС‚СЂРѕР№СЃС‚РІ РІ СЃРїРёСЃРєРµ BUTTONS_LIST РІ С„Р°Р№Р»Рµ РѕРїРёСЃР°РЅРёСЏ РїР»Р°С‚С‹
+#define ZIGBEE_NETWORK_STATE_LED   BSP_BOARD_LED_0    // РЅРѕРјРµСЂ СЃРІРµС‚РѕРґРёРѕРґР° СЃРѕСЃС‚РѕСЏРЅРёСЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ РІ СЃРїРёСЃРєРµ LEDS_LIST РІ С„Р°Р№Р»Рµ РѕРїРёСЃР°РЅРёСЏ РїР»Р°С‚С‹
 
-// пины, используемые под каждый из 4 цветов.
-// LED2_Dx задаются в файле описания платы (mluvke_debug_breadboard.h в моём случае),
-// файл инклудится через дефайн CUSTOM_BOARD_INC в настройках проекта (+ дефайн BOARD_MLUVKE_DEBUG_BREADBOARD)
+// РїРёРЅС‹, РёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ РїРѕРґ РєР°Р¶РґС‹Р№ РёР· 4 С†РІРµС‚РѕРІ.
+// LED2_Dx Р·Р°РґР°СЋС‚СЃСЏ РІ С„Р°Р№Р»Рµ РѕРїРёСЃР°РЅРёСЏ РїР»Р°С‚С‹ (mluvke_debug_breadboard.h РІ РјРѕС‘Рј СЃР»СѓС‡Р°Рµ),
+// С„Р°Р№Р» РёРЅРєР»СѓРґРёС‚СЃСЏ С‡РµСЂРµР· РґРµС„Р°Р№РЅ CUSTOM_BOARD_INC РІ РЅР°СЃС‚СЂРѕР№РєР°С… РїСЂРѕРµРєС‚Р° (+ РґРµС„Р°Р№РЅ BOARD_MLUVKE_DEBUG_BREADBOARD)
 #define DIMMER_CHANNEL_PIN_R LED2_DR // pwm channel 0
 #define DIMMER_CHANNEL_PIN_G LED2_DG // pwm channel 1
 #define DIMMER_CHANNEL_PIN_B LED2_DB // pwm channel 2
 #define DIMMER_CHANNEL_PIN_W LED2_DW // pwm channel 3
 
-// настройки ШИМ, не вникал, т.к. работает само из коробки.
-static nrf_drv_pwm_t m_led_pwm = DIMMER_PWM_INSTANCE; // инстанс ШИМ
-static nrf_pwm_values_individual_t m_led_values; // массив из 4 яркостей для каждого из 4 светодиодов
+// РЅР°СЃС‚СЂРѕР№РєРё РЁРРњ, РЅРµ РІРЅРёРєР°Р», С‚.Рє. СЂР°Р±РѕС‚Р°РµС‚ СЃР°РјРѕ РёР· РєРѕСЂРѕР±РєРё.
+static nrf_drv_pwm_t m_led_pwm = DIMMER_PWM_INSTANCE; // РёРЅСЃС‚Р°РЅСЃ РЁРРњ
+static nrf_pwm_values_individual_t m_led_values; // РјР°СЃСЃРёРІ РёР· 4 СЏСЂРєРѕСЃС‚РµР№ РґР»СЏ РєР°Р¶РґРѕРіРѕ РёР· 4 СЃРІРµС‚РѕРґРёРѕРґРѕРІ
 static nrf_pwm_sequence_t const m_led_seq =
 {
         .values.p_individual = &m_led_values,
@@ -60,7 +60,7 @@ static nrf_pwm_sequence_t const m_led_seq =
         .end_delay = 0
 };
 
-// макрос, используемый для заполнения структуры в памяти под "простое" описание эндпоинта, когда эндпоинтов несколько.
+// РјР°РєСЂРѕСЃ, РёСЃРїРѕР»СЊР·СѓРµРјС‹Р№ РґР»СЏ Р·Р°РїРѕР»РЅРµРЅРёСЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ РІ РїР°РјСЏС‚Рё РїРѕРґ "РїСЂРѕСЃС‚РѕРµ" РѕРїРёСЃР°РЅРёРµ СЌРЅРґРїРѕРёРЅС‚Р°, РєРѕРіРґР° СЌРЅРґРїРѕРёРЅС‚РѕРІ РЅРµСЃРєРѕР»СЊРєРѕ.
 #define ZB_ZCL_DECLARE_HA_DIMMABLE_LIGHT_SIMPLE_DESC_VA(ep_name, ep_id, in_clust_num, out_clust_num) \
     ZB_DECLARE_SIMPLE_DESC_VA(in_clust_num, out_clust_num, ep_name);                                 \
     ZB_AF_SIMPLE_DESC_TYPE_VA(in_clust_num, out_clust_num, ep_name)                                  \
@@ -82,7 +82,7 @@ static nrf_pwm_sequence_t const m_led_seq =
                 ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL,                                                     \
             }}
 
-// макрос описывает структуру эндпоинта целиком со всеми потрохами
+// РјР°РєСЂРѕСЃ РѕРїРёСЃС‹РІР°РµС‚ СЃС‚СЂСѓРєС‚СѓСЂСѓ СЌРЅРґРїРѕРёРЅС‚Р° С†РµР»РёРєРѕРј СЃРѕ РІСЃРµРјРё РїРѕС‚СЂРѕС…Р°РјРё
 #define ZB_HA_DECLARE_LIGHT_EP(ep_name, ep_id, cluster_list)                                                                                    \
     ZB_ZCL_DECLARE_HA_DIMMABLE_LIGHT_SIMPLE_DESC_VA(ep_name, ep_id, ZB_HA_DIMMABLE_LIGHT_IN_CLUSTER_NUM, ZB_HA_DIMMABLE_LIGHT_OUT_CLUSTER_NUM); \
     ZBOSS_DEVICE_DECLARE_REPORTING_CTX(reporting_info##device_ctx_name, ZB_HA_DIMMABLE_LIGHT_REPORT_ATTR_COUNT);                                \
@@ -98,7 +98,7 @@ static nrf_pwm_sequence_t const m_led_seq =
         ZB_HA_DIMMABLE_LIGHT_CVC_ATTR_COUNT,                                                                                                    \
         cvc_alarm_info##device_ctx_name)
 
-// вспомогательный макрос, нужный в макросе ZB_DECLARE_DIMMABLE_CONTROL_CLUSTER_LIST для заполнения кластеров
+// РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РјР°РєСЂРѕСЃ, РЅСѓР¶РЅС‹Р№ РІ РјР°РєСЂРѕСЃРµ ZB_DECLARE_DIMMABLE_CONTROL_CLUSTER_LIST РґР»СЏ Р·Р°РїРѕР»РЅРµРЅРёСЏ РєР»Р°СЃС‚РµСЂРѕРІ
 #define ZB_ZCL_DECLARE_LEVEL_CONTROL_ATTRIB_LIST_VA(attr_list, current_level, remaining_time, ...) \
     zb_zcl_level_control_move_status_t move_status_data_ctx##__VA_ARGS__##_attr_list;              \
     ZB_ZCL_START_DECLARE_ATTRIB_LIST(attr_list)                                                    \
@@ -112,8 +112,8 @@ static nrf_pwm_sequence_t const m_led_seq =
 #error Define ZB_ROUTER_ROLE to compile light bulb (Router) source code.
 #endif
 
-// структуры, которые в последствии войдут в bulb_device_ctx_t. Используются в bulb_device_ctx_t, где хранится
-// полное состояние эндпоинта
+// СЃС‚СЂСѓРєС‚СѓСЂС‹, РєРѕС‚РѕСЂС‹Рµ РІ РїРѕСЃР»РµРґСЃС‚РІРёРё РІРѕР№РґСѓС‚ РІ bulb_device_ctx_t. РСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ РІ bulb_device_ctx_t, РіРґРµ С…СЂР°РЅРёС‚СЃСЏ
+// РїРѕР»РЅРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ СЌРЅРґРїРѕРёРЅС‚Р°
 typedef struct
 {
     zb_uint8_t zcl_version;
@@ -164,8 +164,8 @@ typedef struct
 
 typedef struct
 {
-    uint8_t ep_id; // айди эндпоинта (10-13)
-    uint8_t pwm_channel; // используемый канал ШИМ
+    uint8_t ep_id; // Р°Р№РґРё СЌРЅРґРїРѕРёРЅС‚Р° (10-13)
+    uint8_t pwm_channel; // РёСЃРїРѕР»СЊР·СѓРµРјС‹Р№ РєР°РЅР°Р» РЁРРњ
 
     bulb_device_basic_attr_t basic_attr;
     bulb_device_identify_attr_t identify_attr;
@@ -175,13 +175,13 @@ typedef struct
     bulb_device_level_control_attr_t level_control_attr;
 } bulb_device_ctx_t;
 
-// 4 структуры, в которых хранится полное состояние каждого из 4 эндпоинтов девайса (вкл/выкл, яркость и так далее).
+// 4 СЃС‚СЂСѓРєС‚СѓСЂС‹, РІ РєРѕС‚РѕСЂС‹С… С…СЂР°РЅРёС‚СЃСЏ РїРѕР»РЅРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ РєР°Р¶РґРѕРіРѕ РёР· 4 СЌРЅРґРїРѕРёРЅС‚РѕРІ РґРµРІР°Р№СЃР° (РІРєР»/РІС‹РєР», СЏСЂРєРѕСЃС‚СЊ Рё С‚Р°Рє РґР°Р»РµРµ).
 static bulb_device_ctx_t m_dev_ctx_r;
 static bulb_device_ctx_t m_dev_ctx_g;
 static bulb_device_ctx_t m_dev_ctx_b;
 static bulb_device_ctx_t m_dev_ctx_w;
 
-// макрос, который описывает поддерживаемые эндпоинтом кластеры для управления им.
+// РјР°РєСЂРѕСЃ, РєРѕС‚РѕСЂС‹Р№ РѕРїРёСЃС‹РІР°РµС‚ РїРѕРґРґРµСЂР¶РёРІР°РµРјС‹Рµ СЌРЅРґРїРѕРёРЅС‚РѕРј РєР»Р°СЃС‚РµСЂС‹ РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ РёРј.
 #define ZB_DECLARE_DIMMABLE_CONTROL_CLUSTER_LIST(dev_ctx_name, dimmable_light_bulb_cluster_list) \
     ZB_ZCL_DECLARE_IDENTIFY_ATTRIB_LIST(dev_ctx_name##_identify_attr_list,                       \
         &dev_ctx_name.identify_attr.identify_time);                                              \
@@ -221,22 +221,22 @@ static bulb_device_ctx_t m_dev_ctx_w;
         dev_ctx_name##_on_off_attr_list,                                                         \
         dev_ctx_name##_level_control_attr_list);
 
-// заполняем кластеры для каждого эндпоинта
+// Р·Р°РїРѕР»РЅСЏРµРј РєР»Р°СЃС‚РµСЂС‹ РґР»СЏ РєР°Р¶РґРѕРіРѕ СЌРЅРґРїРѕРёРЅС‚Р°
 ZB_DECLARE_DIMMABLE_CONTROL_CLUSTER_LIST(m_dev_ctx_r, m_dev_clusters_r);
 ZB_DECLARE_DIMMABLE_CONTROL_CLUSTER_LIST(m_dev_ctx_g, m_dev_clusters_g);
 ZB_DECLARE_DIMMABLE_CONTROL_CLUSTER_LIST(m_dev_ctx_b, m_dev_clusters_b);
 ZB_DECLARE_DIMMABLE_CONTROL_CLUSTER_LIST(m_dev_ctx_w, m_dev_clusters_w);
 
-// создаём 4 эндпоинта, указываем для них айди и кластеры
+// СЃРѕР·РґР°С‘Рј 4 СЌРЅРґРїРѕРёРЅС‚Р°, СѓРєР°Р·С‹РІР°РµРј РґР»СЏ РЅРёС… Р°Р№РґРё Рё РєР»Р°СЃС‚РµСЂС‹
 ZB_HA_DECLARE_LIGHT_EP(dimmable_light_ep_r, HA_DIMMABLE_LIGHT_ENDPOINT_R, m_dev_clusters_r);
 ZB_HA_DECLARE_LIGHT_EP(dimmable_light_ep_g, HA_DIMMABLE_LIGHT_ENDPOINT_G, m_dev_clusters_g);
 ZB_HA_DECLARE_LIGHT_EP(dimmable_light_ep_b, HA_DIMMABLE_LIGHT_ENDPOINT_B, m_dev_clusters_b);
 ZB_HA_DECLARE_LIGHT_EP(dimmable_light_ep_w, HA_DIMMABLE_LIGHT_ENDPOINT_W, m_dev_clusters_w);
 
-// полный список эндпоинтов, dimmable_light_ctx используется в ZB_AF_REGISTER_DEVICE_CTX() для регистрации
+// РїРѕР»РЅС‹Р№ СЃРїРёСЃРѕРє СЌРЅРґРїРѕРёРЅС‚РѕРІ, dimmable_light_ctx РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РІ ZB_AF_REGISTER_DEVICE_CTX() РґР»СЏ СЂРµРіРёСЃС‚СЂР°С†РёРё
 ZBOSS_DECLARE_DEVICE_CTX_4_EP(dimmable_light_ctx, dimmable_light_ep_r, dimmable_light_ep_g, dimmable_light_ep_b, dimmable_light_ep_w);
 
-// поиск контекста эндпоинта (где все настройки и состояние) по его айди. Эндпоинты с 10 по 13 для каждого цвета соответственно
+// РїРѕРёСЃРє РєРѕРЅС‚РµРєСЃС‚Р° СЌРЅРґРїРѕРёРЅС‚Р° (РіРґРµ РІСЃРµ РЅР°СЃС‚СЂРѕР№РєРё Рё СЃРѕСЃС‚РѕСЏРЅРёРµ) РїРѕ РµРіРѕ Р°Р№РґРё. Р­РЅРґРїРѕРёРЅС‚С‹ СЃ 10 РїРѕ 13 РґР»СЏ РєР°Р¶РґРѕРіРѕ С†РІРµС‚Р° СЃРѕРѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕ
 bulb_device_ctx_t *find_ctx_by_ep_id(zb_uint8_t ep)
 {
     if (ep == HA_DIMMABLE_LIGHT_ENDPOINT_R)
@@ -250,14 +250,14 @@ bulb_device_ctx_t *find_ctx_by_ep_id(zb_uint8_t ep)
     return NULL;
 }
 
-// инициализация таймеров
+// РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ С‚Р°Р№РјРµСЂРѕРІ
 static void timer_init(void)
 {
     uint32_t error_code = app_timer_init();
     APP_ERROR_CHECK(error_code);
 }
 
-// инициализация логгирования в уарт.
+// РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ Р»РѕРіРіРёСЂРѕРІР°РЅРёСЏ РІ СѓР°СЂС‚.
 static void log_init(void)
 {
     ret_code_t err_code = NRF_LOG_INIT(NULL);
@@ -266,7 +266,7 @@ static void log_init(void)
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 }
 
-// функция прописывает яркость эндпоинта в нужном канале ШИМ
+// С„СѓРЅРєС†РёСЏ РїСЂРѕРїРёСЃС‹РІР°РµС‚ СЏСЂРєРѕСЃС‚СЊ СЌРЅРґРїРѕРёРЅС‚Р° РІ РЅСѓР¶РЅРѕРј РєР°РЅР°Р»Рµ РЁРРњ
 static void pwm_set_brightness(bulb_device_ctx_t *p_dimmable_light_ctx, zb_uint16_t brightness)
 {
     uint16_t *p_channels = (uint16_t *)&m_led_values;
@@ -274,7 +274,7 @@ static void pwm_set_brightness(bulb_device_ctx_t *p_dimmable_light_ctx, zb_uint1
     p_channels[p_dimmable_light_ctx->pwm_channel] = brightness;
 }
 
-// устанавливает яркость для конкретного кананала, прописывает аттрибуты и прописывает ШИМ
+// СѓСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЏСЂРєРѕСЃС‚СЊ РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РєР°РЅР°РЅР°Р»Р°, РїСЂРѕРїРёСЃС‹РІР°РµС‚ Р°С‚С‚СЂРёР±СѓС‚С‹ Рё РїСЂРѕРїРёСЃС‹РІР°РµС‚ РЁРРњ
 static void level_control_set_value(bulb_device_ctx_t *p_dimmable_light_ctx, zb_uint16_t new_level)
 {
     NRF_LOG_INFO("Set level value: %i for endpoint %hu", new_level, p_dimmable_light_ctx->ep_id);
@@ -295,7 +295,7 @@ static void level_control_set_value(bulb_device_ctx_t *p_dimmable_light_ctx, zb_
     pwm_set_brightness(p_dimmable_light_ctx, p_dimmable_light_ctx->level_control_attr.current_level);
 }
 
-// включает/выключает канал (сохраняя старое значение при включении)
+// РІРєР»СЋС‡Р°РµС‚/РІС‹РєР»СЋС‡Р°РµС‚ РєР°РЅР°Р» (СЃРѕС…СЂР°РЅСЏСЏ СЃС‚Р°СЂРѕРµ Р·РЅР°С‡РµРЅРёРµ РїСЂРё РІРєР»СЋС‡РµРЅРёРё)
 static void on_off_set_value(bulb_device_ctx_t *p_dimmable_light_ctx, zb_bool_t on)
 {
     NRF_LOG_INFO("Set ON/OFF value: %i on endpoint: %hu", on, p_dimmable_light_ctx->ep_id);
@@ -312,7 +312,7 @@ static void on_off_set_value(bulb_device_ctx_t *p_dimmable_light_ctx, zb_bool_t 
     }
 }
 
-// обработчик нажатия клавиш на плате
+// РѕР±СЂР°Р±РѕС‚С‡РёРє РЅР°Р¶Р°С‚РёСЏ РєР»Р°РІРёС€ РЅР° РїР»Р°С‚Рµ
 static void buttons_handler(bsp_event_t evt)
 {
     zb_ret_t zb_err_code;
@@ -339,16 +339,16 @@ static void buttons_handler(bsp_event_t evt)
     }
 }
 
-// настройка портов и железа на плате
+// РЅР°СЃС‚СЂРѕР№РєР° РїРѕСЂС‚РѕРІ Рё Р¶РµР»РµР·Р° РЅР° РїР»Р°С‚Рµ
 static void board_init(void)
 {
     ret_code_t err_code;
 
-    // настройка светиков и кнопок платы
+    // РЅР°СЃС‚СЂРѕР№РєР° СЃРІРµС‚РёРєРѕРІ Рё РєРЅРѕРїРѕРє РїР»Р°С‚С‹
     err_code = bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, buttons_handler);
     APP_ERROR_CHECK(err_code);
 
-    // настройка ШИМ
+    // РЅР°СЃС‚СЂРѕР№РєР° РЁРРњ
     nrf_drv_pwm_config_t const led_pwm_config =
         {
             .output_pins =
@@ -372,7 +372,7 @@ static void board_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-// заполнение настроек кластеров эндпоинта
+// Р·Р°РїРѕР»РЅРµРЅРёРµ РЅР°СЃС‚СЂРѕРµРє РєР»Р°СЃС‚РµСЂРѕРІ СЌРЅРґРїРѕРёРЅС‚Р°
 static void dimmable_clusters_attr_init(bulb_device_ctx_t *p_dimmable_light_ctx)
 {
     p_dimmable_light_ctx->basic_attr.zcl_version = ZB_ZCL_VERSION;
@@ -404,7 +404,7 @@ static void dimmable_clusters_attr_init(bulb_device_ctx_t *p_dimmable_light_ctx)
     ZB_ZCL_SET_ATTRIBUTE(p_dimmable_light_ctx->ep_id, ZB_ZCL_CLUSTER_ID_LEVEL_CONTROL, ZB_ZCL_CLUSTER_SERVER_ROLE, ZB_ZCL_ATTR_LEVEL_CONTROL_CURRENT_LEVEL_ID, (zb_uint8_t *)&p_dimmable_light_ctx->level_control_attr.current_level, ZB_FALSE);
 }
 
-// инициализация контекста эндпоинта
+// РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РєРѕРЅС‚РµРєСЃС‚Р° СЌРЅРґРїРѕРёРЅС‚Р°
 void zb_dimmable_light_init_ctx(bulb_device_ctx_t *p_dimmable_light_ctx, uint8_t ep_id, uint8_t pwm_channel)
 {
     memset(p_dimmable_light_ctx, 0, sizeof(bulb_device_ctx_t));
@@ -421,7 +421,7 @@ zb_void_t zb_osif_go_idle(zb_void_t)
     zb_osif_wait_for_event();
 }
 
-// считывает атрибуты из поступившего сообщения и устанавливает яркость или включает-выключает канал.
+// СЃС‡РёС‚С‹РІР°РµС‚ Р°С‚СЂРёР±СѓС‚С‹ РёР· РїРѕСЃС‚СѓРїРёРІС€РµРіРѕ СЃРѕРѕР±С‰РµРЅРёСЏ Рё СѓСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЏСЂРєРѕСЃС‚СЊ РёР»Рё РІРєР»СЋС‡Р°РµС‚-РІС‹РєР»СЋС‡Р°РµС‚ РєР°РЅР°Р».
 zb_ret_t zb_dimmer_light_set_attribute(bulb_device_ctx_t *p_dimmable_light_ctx, zb_zcl_set_attr_value_param_t *p_savp)
 {
     zb_ret_t ret = RET_NOT_IMPLEMENTED;
@@ -454,7 +454,7 @@ zb_ret_t zb_dimmer_light_set_attribute(bulb_device_ctx_t *p_dimmable_light_ctx, 
     return ret;
 }
 
-// обработчик событий, вызываемый при изменении аттрибутов ZCL у эндпоинтов
+// РѕР±СЂР°Р±РѕС‚С‡РёРє СЃРѕР±С‹С‚РёР№, РІС‹Р·С‹РІР°РµРјС‹Р№ РїСЂРё РёР·РјРµРЅРµРЅРёРё Р°С‚С‚СЂРёР±СѓС‚РѕРІ ZCL Сѓ СЌРЅРґРїРѕРёРЅС‚РѕРІ
 static zb_void_t zcl_device_cb(zb_uint8_t param)
 {
     zb_uint8_t cluster_id;
@@ -492,7 +492,7 @@ static zb_void_t zcl_device_cb(zb_uint8_t param)
     NRF_LOG_INFO("zcl_device_cb status: %hd", p_device_cb_param->status);
 }
 
-// обработчик основных событий в стеке зигби - старт, стоп, наличие проблем и вот это вот всё.
+// РѕР±СЂР°Р±РѕС‚С‡РёРє РѕСЃРЅРѕРІРЅС‹С… СЃРѕР±С‹С‚РёР№ РІ СЃС‚РµРєРµ Р·РёРіР±Рё - СЃС‚Р°СЂС‚, СЃС‚РѕРї, РЅР°Р»РёС‡РёРµ РїСЂРѕР±Р»РµРј Рё РІРѕС‚ СЌС‚Рѕ РІРѕС‚ РІСЃС‘.
 void zboss_signal_handler(zb_uint8_t param)
 {
     zb_zdo_app_signal_hdr_t *p_sg_p = NULL;
@@ -600,39 +600,39 @@ void zboss_signal_handler(zb_uint8_t param)
 int main(void)
 {
     zb_ret_t zb_err_code;
-    zb_ieee_addr_t ieee_addr; // здесь будет длинный адрес ноды
+    zb_ieee_addr_t ieee_addr; // Р·РґРµСЃСЊ Р±СѓРґРµС‚ РґР»РёРЅРЅС‹Р№ Р°РґСЂРµСЃ РЅРѕРґС‹
 
-    timer_init(); // запускаем таймеры, без них ничего работать не будет :)
-    log_init(); // инициализация движка логгирования (в последовательный порт в нашем случае)
-    board_init(); // инициализация платы
+    timer_init(); // Р·Р°РїСѓСЃРєР°РµРј С‚Р°Р№РјРµСЂС‹, Р±РµР· РЅРёС… РЅРёС‡РµРіРѕ СЂР°Р±РѕС‚Р°С‚СЊ РЅРµ Р±СѓРґРµС‚ :)
+    log_init(); // РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РґРІРёР¶РєР° Р»РѕРіРіРёСЂРѕРІР°РЅРёСЏ (РІ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅС‹Р№ РїРѕСЂС‚ РІ РЅР°С€РµРј СЃР»СѓС‡Р°Рµ)
+    board_init(); // РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїР»Р°С‚С‹
 
-    ZB_SET_TRACE_LEVEL(ZIGBEE_TRACE_LEVEL); // настройки логгирования (как много писать в логи)
+    ZB_SET_TRACE_LEVEL(ZIGBEE_TRACE_LEVEL); // РЅР°СЃС‚СЂРѕР№РєРё Р»РѕРіРіРёСЂРѕРІР°РЅРёСЏ (РєР°Рє РјРЅРѕРіРѕ РїРёСЃР°С‚СЊ РІ Р»РѕРіРё)
     ZB_SET_TRACE_MASK(ZIGBEE_TRACE_MASK);
     ZB_SET_TRAF_DUMP_OFF();
 
     ZB_INIT("dimmer_rgbw");
 
-    zb_osif_get_ieee_eui64(ieee_addr); // читаем полный адрес из памяти
-    zb_set_long_address(ieee_addr); // и устанавливаем его
+    zb_osif_get_ieee_eui64(ieee_addr); // С‡РёС‚Р°РµРј РїРѕР»РЅС‹Р№ Р°РґСЂРµСЃ РёР· РїР°РјСЏС‚Рё
+    zb_set_long_address(ieee_addr); // Рё СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј РµРіРѕ
 
-    zb_set_network_router_role(IEEE_CHANNEL_MASK); // роутером будем
-    zb_set_max_children(MAX_CHILDREN); // максимальное количество дочерних девайсов у роутера
-    zigbee_erase_persistent_storage(ERASE_PERSISTENT_CONFIG); // очищать или нет конфиг при старте
+    zb_set_network_router_role(IEEE_CHANNEL_MASK); // СЂРѕСѓС‚РµСЂРѕРј Р±СѓРґРµРј
+    zb_set_max_children(MAX_CHILDREN); // РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РґРѕС‡РµСЂРЅРёС… РґРµРІР°Р№СЃРѕРІ Сѓ СЂРѕСѓС‚РµСЂР°
+    zigbee_erase_persistent_storage(ERASE_PERSISTENT_CONFIG); // РѕС‡РёС‰Р°С‚СЊ РёР»Рё РЅРµС‚ РєРѕРЅС„РёРі РїСЂРё СЃС‚Р°СЂС‚Рµ
     zb_set_keepalive_timeout(ZB_MILLISECONDS_TO_BEACON_INTERVAL(3000));
 
-    ZB_AF_REGISTER_DEVICE_CTX(&dimmable_light_ctx); // регистрируем список эндпоинтов в стеке
+    ZB_AF_REGISTER_DEVICE_CTX(&dimmable_light_ctx); // СЂРµРіРёСЃС‚СЂРёСЂСѓРµРј СЃРїРёСЃРѕРє СЌРЅРґРїРѕРёРЅС‚РѕРІ РІ СЃС‚РµРєРµ
 
-    ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb); // коллбэк-функция, которая будет вызываться при изменении состояния эндпоинтов
+    ZB_ZCL_REGISTER_DEVICE_CB(zcl_device_cb); // РєРѕР»Р»Р±СЌРє-С„СѓРЅРєС†РёСЏ, РєРѕС‚РѕСЂР°СЏ Р±СѓРґРµС‚ РІС‹Р·С‹РІР°С‚СЊСЃСЏ РїСЂРё РёР·РјРµРЅРµРЅРёРё СЃРѕСЃС‚РѕСЏРЅРёСЏ СЌРЅРґРїРѕРёРЅС‚РѕРІ
 
-    zb_dimmable_light_init_ctx(&m_dev_ctx_r, HA_DIMMABLE_LIGHT_ENDPOINT_R, 0); // инициализируем каждый из 4 эндпоинтов, указываем номер канала ШИМ
+    zb_dimmable_light_init_ctx(&m_dev_ctx_r, HA_DIMMABLE_LIGHT_ENDPOINT_R, 0); // РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј РєР°Р¶РґС‹Р№ РёР· 4 СЌРЅРґРїРѕРёРЅС‚РѕРІ, СѓРєР°Р·С‹РІР°РµРј РЅРѕРјРµСЂ РєР°РЅР°Р»Р° РЁРРњ
     zb_dimmable_light_init_ctx(&m_dev_ctx_g, HA_DIMMABLE_LIGHT_ENDPOINT_G, 1);
     zb_dimmable_light_init_ctx(&m_dev_ctx_b, HA_DIMMABLE_LIGHT_ENDPOINT_B, 2);
     zb_dimmable_light_init_ctx(&m_dev_ctx_w, HA_DIMMABLE_LIGHT_ENDPOINT_W, 3);
 
-    zb_err_code = zboss_start(); // запуск стека зигби
+    zb_err_code = zboss_start(); // Р·Р°РїСѓСЃРє СЃС‚РµРєР° Р·РёРіР±Рё
     ZB_ERROR_CHECK(zb_err_code);
 
-    while (1) // вечный цикл, в котором крутится вся жизнь приложения
+    while (1) // РІРµС‡РЅС‹Р№ С†РёРєР», РІ РєРѕС‚РѕСЂРѕРј РєСЂСѓС‚РёС‚СЃСЏ РІСЃСЏ Р¶РёР·РЅСЊ РїСЂРёР»РѕР¶РµРЅРёСЏ
     {
         zboss_main_loop_iteration();
         UNUSED_RETURN_VALUE(NRF_LOG_PROCESS());
